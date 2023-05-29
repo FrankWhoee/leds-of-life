@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import time
 import sys
+from datetime import datetime
 
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 from PIL import Image
@@ -38,7 +39,7 @@ def randomizeCell(grid, r,c):
 def addRandomCell(grid, r,c):
     liveNeighbours = getLiveNeighbours(grid,r,c)
     if liveNeighbours > 0:
-        grid[r][c] = 1 if random.random() < 1 else grid[r][c]
+        return 1 if random.random() < 0.05 else grid[r][c]
 
 def getLiveNeighbours(grid, r,c):
     alive = 0
@@ -66,7 +67,10 @@ def lifeCell(grid, r,c):
     return None
     
 
-applyToEveryCell(randomizeCell, life)
+# applyToEveryCell(randomizeCell, life)
+life[32][30] = 1
+life[32][31] = 1
+life[32][32] = 1
 
 def constructCanvas():
     global life
@@ -79,14 +83,43 @@ def constructCanvas():
     applyToEveryCell(helper, life)
     return canvas
 
+def canvasClear():
+    global life
+    canvas = matrix.CreateFrameCanvas()
+
+    def helper(grid, r,c):
+        grid[r][c] = 0
+        canvas.SetPixel(r,c,0,0,0)
+    applyToEveryCell(helper,life)
+
+    return canvas
+
+
 try:
     print("Press CTRL-C to stop.")
-
+    prev = None
+    prevPrev = None
+    now = datetime.now().time()
+    print(now.hour)
+    boardOn = now.hour < 23 and now.hour >= 9
     while(True):
         matrix.SwapOnVSync(constructCanvas())
-        if applyToEveryCell(lifeCell,life):
-            pass
-            # applyToEveryCell(addRandomCell, life)
+        now = datetime.now().time()
+        if now.hour == 22 and now.minute >= 30:
+            boardOn = False
+        elif now.hour == 9:
+            boardOn = True
+        if not boardOn:
+            time.sleep(10)
+            matrix.SwapOnVSync(canvasClear())
+            continue
+        curr = applyToEveryCell(lifeCell,life)
+        if len(curr) == 0:
+            applyToEveryCell(randomizeCell, life)
+        elif prev == curr or curr == prevPrev:
+            applyToEveryCell(addRandomCell, life)
+        prevPrev = prev
+        prev = curr
         time.sleep(0.05)
 except KeyboardInterrupt:
     sys.exit(0)
