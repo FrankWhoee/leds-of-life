@@ -22,7 +22,7 @@ matrix = RGBMatrix(options = options)
 
 life = [[[0,0]] * options.cols for i in range(options.rows)]
 
-MAX_AGE = 20
+MAX_AGE = 200
 
 def applyToEveryCell(fn, grid):
     changed_values = []
@@ -33,7 +33,7 @@ def applyToEveryCell(fn, grid):
                 changed_values.append((fn(grid,r,c), r, c))
     for point in changed_values:
         if point[0] == 1:
-            grid[point[1]][point[2]] = [1,MAX_AGE]
+            grid[point[1]][point[2]] = [1,int(MAX_AGE - MAX_AGE * random.uniform(0,0.75))]
         else:
            grid[point[1]][point[2]] = [0,0] 
     return changed_values
@@ -44,7 +44,7 @@ def randomizeCell(grid, r,c):
 def addRandomCell(grid, r,c):
     liveNeighbours = getLiveNeighbours(grid,r,c)
     if liveNeighbours > 0:
-        return 1 if random.random() < 0.05 else grid[r][c][0]
+        return 1 if random.random() < 0.01 else None
 
 def getLiveNeighbours(grid, r,c):
     alive = 0
@@ -134,13 +134,12 @@ try:
             matrix.SwapOnVSync(canvasClear())
             continue
         curr = applyToEveryCell(lifeCell,life)
-        if len(curr) == 0:
+        if len(curr) == 0 or idleCount <= 0:
             applyToEveryCell(randomizeCell, life)
+            idleCount = 7
         elif prev == curr or curr == prevPrev:
             idleCount -= 1
-        if idleCount <= 0:
-            applyToEveryCell(addRandomCell, life)
-            idleCount = 7
+        applyToEveryCell(addRandomCell, life)
         prevPrev = prev
         prev = curr
         pop = getPopulation(life)
