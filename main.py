@@ -22,15 +22,18 @@ matrix = RGBMatrix(options = options)
 life = [[0] * options.cols for i in range(options.rows)]
 
 def applyToEveryCell(fn, grid):
-    acc = True
+    changed_values = []
     for r in range(len(life)):
         for c in range(len(life[r])):
             val = fn(grid,r,c)
-            acc &= True if val is None else val
-    return acc
+            if val is not None:
+                changed_values.append((fn(grid,r,c), r, c))
+    for point in changed_values:
+        grid[point[1]][point[2]] = point[0]
+    return changed_values
 
 def randomizeCell(grid, r,c):
-    grid[r][c] = 1 if random.random() < 0.3 else 0
+    return 1 if random.random() < 0.3 else 0
 
 def addRandomCell(grid, r,c):
     liveNeighbours = getLiveNeighbours(grid,r,c)
@@ -39,22 +42,29 @@ def addRandomCell(grid, r,c):
 
 def getLiveNeighbours(grid, r,c):
     alive = 0
-    for ri in range(-1,2):
-        for ci in range(-1,2):
-            if ri != 0 and ci != 0 and r + ri >= 0 and r + ri < len(grid) and c + ci >= 0 and c + ci < len(grid[r]) and grid[r + ri][c + ci] == 1:
-                alive += 1
+    neighbours = [(0,1), (1,1), (1,0), (1,-1), (0,-1), (-1,-1), (-1,0), (-1,1)]
+    for n in neighbours:
+        dr = n[0]
+        dc = n[1]
+        r1 = r + dr
+        c1 = c + dc
+
+        if (r1 < 0 or r1 >= len(grid) or c1 < 0 or c1 >= len(grid[0])):
+            continue
+        if grid[r1][c1] == 1:
+            alive += 1
+
     return alive
 
 def lifeCell(grid, r,c):
     liveNeighbours = getLiveNeighbours(grid,r,c)
     if grid[r][c] == 1:
         if liveNeighbours < 2 or liveNeighbours > 3:
-            grid[r][c] = 0
-            return False
-    else:
-        if liveNeighbours == 3:
-            grid[r][c] = 1
-            return False
+            return 0
+    elif grid[r][c] == 0 and liveNeighbours == 3:
+            return 1
+    return None
+    
 
 applyToEveryCell(randomizeCell, life)
 
@@ -72,11 +82,11 @@ def constructCanvas():
 try:
     print("Press CTRL-C to stop.")
 
-    # Infinitely loop through the gif
     while(True):
-        if applyToEveryCell(lifeCell,life):
-            applyToEveryCell(addRandomCell, life)
         matrix.SwapOnVSync(constructCanvas())
+        if applyToEveryCell(lifeCell,life):
+            pass
+            # applyToEveryCell(addRandomCell, life)
         time.sleep(0.05)
 except KeyboardInterrupt:
     sys.exit(0)
